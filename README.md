@@ -30,7 +30,7 @@ use 'Hzzy2O/cryptowatch.nvim'
 
 Here's a simple example of how to use `cryptowatch.nvim` and integrate it with lualine:
 
-\`\`\`lua
+```lua
 local cryptowatch = require'cryptowatch'
 
 local price_list = cryptowatch.setup({
@@ -49,7 +49,7 @@ require('lualine').setup({
     lualine_z = price_list
   }
 })
-\`\`\`
+```
 
 ## Configuration
 
