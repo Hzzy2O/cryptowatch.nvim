@@ -19,10 +19,32 @@ local function get_coin_price(coin_pair)
     command = "curl",
     args = { "-s", "https://api.binance.com/api/v3/ticker/price?symbol=" .. coin_pair.coin .. coin_pair.pair },
     on_exit = function(j, return_val)
+      local function format_price(price)
+        -- Convert the price to a number
+        local price_num = tonumber(price)
+
+        if price_num < 0.01 then
+          -- Convert the price to a string
+          local price_str = tostring(price_num)
+
+          -- Find the index of the third non-zero digit after the decimal point
+          local index = 3
+          while price_str:sub(index + 1, index + 1) == "0" do
+            index = index + 1
+          end
+
+          -- Take the substring up to the third non-zero digit after the decimal point
+          return price_str:sub(1, index + 3)
+        else
+          -- If the price is greater than 0, format it with 2 decimal places
+          return string.format("%.2f", price_num)
+        end
+      end
       if return_val == 0 then
         vim.schedule(function()
           local coin_price = vim.fn.json_decode(j:result())["price"]
-          coin_price = string.format("%s %.1f", coin_pair.coin, coin_price)
+          coin_price = format_price(coin_price)
+          coin_price = string.format("%s %s", coin_pair.coin, coin_price)
           local coin_name = string.lower(coin_pair.coin)
           vim.g[coin_name .. "_price"] = coin_price
         end)
@@ -34,6 +56,7 @@ local function get_coin_price(coin_pair)
 end
 
 function M.setup(opts)
+  opts = opts or {}
   coins = opts.coins or coins
   poll_interval = opts.poll_interval or poll_interval
 
