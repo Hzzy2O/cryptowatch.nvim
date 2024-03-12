@@ -34,7 +34,7 @@ Here's a simple example of how to use `cryptowatch.nvim` and integrate it with l
 local cryptowatch = require'cryptowatch'
 
 local price_list = cryptowatch.setup({
-  pairs = {
+  coins = {
     { coin = 'BTC' },
     { coin = 'ETH' },
     { coin = 'LTC' },
