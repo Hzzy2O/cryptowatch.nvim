@@ -17,36 +17,44 @@ local poll_interval = 10000
 local timer
 
 local function get_coin_price(coin_pair)
-	require("plenary.job")
-		:new({
-			command = "curl",
-			args = { "-s", "https://api.binance.com/api/v3/ticker/price?symbol=" .. coin_pair.coin .. coin_pair.pair },
-			on_exit = function(j, return_val)
-				local function format_price(price)
-					local price_num = tonumber(price)
+	local ok = pcall(function()
+		require("plenary.job")
+			:new({
+				command = "curl",
+				args = {
+					"-s",
+					"https://api.binance.com/api/v3/ticker/price?symbol=" .. coin_pair.coin .. coin_pair.pair,
+				},
+				on_exit = function(j, return_val)
+					local function format_price(price)
+						local price_num = tonumber(price)
 
-					if price_num < 1 then
-						return tostring(price)
-					else
-						return string.format("%.2f", price_num)
+						if price_num < 1 then
+							return tostring(price)
+						else
+							return string.format("%.2f", price_num)
+						end
 					end
-				end
-				if return_val == 0 then
-					vim.schedule(function()
-						local coin_price = vim.fn.json_decode(j:result())["price"]
-						coin_price = format_price(coin_price)
-						coin_price = string.format("%s %s", coin_pair.coin, coin_price)
+					if return_val == 0 then
+						vim.schedule(function()
+							local coin_price = vim.fn.json_decode(j:result())["price"]
+							coin_price = format_price(coin_price)
+							coin_price = string.format("%s %s", coin_pair.coin, coin_price)
+							local coin_name = string.lower(coin_pair.coin)
+							prices[coin_name .. "_price"] = coin_price
+						end)
+					else
 						local coin_name = string.lower(coin_pair.coin)
-						prices[coin_name .. "_price"] = coin_price
-					end)
-				else
-					local coin_name = string.lower(coin_pair.coin)
-					prices[coin_name .. "_price"] = "⚠"
-					-- print("Failed to retrieve " .. coin_pair.coin .. " price")
-				end
-			end,
-		})
-		:start()
+						prices[coin_name .. "_price"] = "⚠"
+						-- print("Failed to retrieve " .. coin_pair.coin .. " price")
+					end
+				end,
+			})
+			:start()
+	end)
+	if not ok then
+		-- print("Error: ", err)
+	end
 end
 
 function M.setup(opts)
