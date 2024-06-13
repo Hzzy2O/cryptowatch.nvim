@@ -38,7 +38,7 @@ local function get_coin_price(coin_pair)
 						vim.schedule(function()
 							local coin_price = vim.fn.json_decode(j:result())["price"]
 							coin_price = format_price(coin_price)
-							print(coin_price)
+							-- print(coin_price)
 							coin_price = string.format("%s %s", coin_pair.coin, coin_price)
 							local coin_name = string.lower(coin_pair.coin)
 							prices[coin_name .. "_price"] = coin_price
