@@ -10,14 +10,22 @@ local prices = {}
 local coins = {
 	{ coin = "BTC", color = { bg = "#3D4E81", fg = "#A9B1D6", gui = "bold" } },
 	{ coin = "ETH", color = { bg = "#5753C9", fg = "#d6d8df", gui = "bold" } },
-	{ coin = "LTC", color = { bg = "#6E7FF3", fg = "#e2e4e9", gui = "bold" } },
+	{ coin = "SOL", color = { bg = "#6E7FF3", fg = "#e2e4e9", gui = "bold" } },
 }
 local poll_interval = 10000
-
 local timer
 
+local function format_price(price)
+	local price_num = tonumber(price)
+	if price_num < 1 then
+		return tostring(price)
+	else
+		return string.format("%.2f", price_num)
+	end
+end
+
 local function get_coin_price(coin_pair)
-	local ok = pcall(function()
+	pcall(function()
 		require("plenary.job")
 			:new({
 				command = "curl",
@@ -26,19 +34,11 @@ local function get_coin_price(coin_pair)
 					"https://api.binance.com/api/v3/ticker/price?symbol=" .. coin_pair.coin .. coin_pair.pair,
 				},
 				on_exit = function(j, return_val)
-					local function format_price(price)
-						local price_num = tonumber(price)
-
-						if price_num < 1 then
-							return tostring(price)
-						else
-							return string.format("%.2f", price_num)
-						end
-					end
 					if return_val == 0 then
 						vim.schedule(function()
 							local coin_price = vim.fn.json_decode(j:result())["price"]
 							coin_price = format_price(coin_price)
+							print(coin_price)
 							coin_price = string.format("%s %s", coin_pair.coin, coin_price)
 							local coin_name = string.lower(coin_pair.coin)
 							prices[coin_name .. "_price"] = coin_price
@@ -52,9 +52,6 @@ local function get_coin_price(coin_pair)
 			})
 			:start()
 	end)
-	if not ok then
-		-- print("Error: ", err)
-	end
 end
 
 function M.setup(opts)
@@ -75,11 +72,15 @@ function M.setup(opts)
 	end
 
 	timer = vim.loop.new_timer()
-	timer:start(0, poll_interval, function()
-		for _, coin_pair in ipairs(coins) do
-			get_coin_price(coin_pair)
-		end
-	end)
+	timer:start(
+		0,
+		poll_interval,
+		vim.schedule_wrap(function()
+			for _, coin_pair in ipairs(coins) do
+				get_coin_price(coin_pair)
+			end
+		end)
+	)
 
 	local price_list = {}
 	for _, coin_pair in ipairs(coins) do
